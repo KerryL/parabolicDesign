@@ -34,8 +34,12 @@ double ParabolaCalculator::GetMaxDesignError() const
 {
 	// The design creates the desired parabola along the center of each facet.  So the
 	// largest error will be at the widest part of the parabola, were two facets join.
-	// TODO:  Calculate
-	return -1.0;
+	// We'll report the error in a plane perpendicular to the axis of the parabola.
+	
+	const double halfFacetWidth(0.5 * M_PI * parabolaInfo.diameter / parabolaInfo.facetCount);
+	const double jointDistance(sqrt(parabolaInfo.diameter * parabolaInfo.diameter * 0.25 + halfFacetWidth * halfFacetWidth));
+
+	return jointDistance - 0.5 * parabolaInfo.diameter;
 }
 	
 ParabolaCalculator::Vector2DVectors ParabolaCalculator::GetResponse(const unsigned int& pointCount, const double& maxFrequency) const
