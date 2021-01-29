@@ -32,19 +32,26 @@ double ParabolaCalculator::GetParabolaDepth() const
 
 double ParabolaCalculator::GetMaxDesignError() const
 {
+	// The design creates the desired parabola along the center of each facet.  So the
+	// largest error will be at the widest part of the parabola, were two facets join.
 	// TODO:  Calculate
 	return -1.0;
 }
 	
 ParabolaCalculator::Vector2DVectors ParabolaCalculator::GetResponse(const unsigned int& pointCount, const double& maxFrequency) const
 {
+	// Response equation from https://www.wildtronics.com/parabolicaccuracy.html#.YBQSbPtKg5k
+	// I need to find some more sources to derive/verify this equation.  The link seems to have
+	// an efficiency that varies with frequency and error, but they don't give this relationship.
 	Vector2DVectors response(pointCount);
+	const double minFrequency(GetMinAmplifiedFrequency());
+	const double frequencyStep((maxFrequency - minFrequency) / (pointCount - 1));
 	for (unsigned int i = 0; i < pointCount; ++i)
 	{
-		response[i](0) = 1.0;
-		response[i](1) = 0.0;
+		response[i](0) = minFrequency + i * frequencyStep;
+		response[i](1) = 20.0 * log10(3.25 * parabolaInfo.diameter / speedOfSound * (response[i](0) * 2.0 * M_PI));
 	}
-	// TODO
+
 	return response;
 }
 
@@ -65,8 +72,7 @@ ParabolaCalculator::Vector2DVectors ParabolaCalculator::GetParabolaShape(const u
 ParabolaCalculator::Vector2DVectors ParabolaCalculator::GetFacetShape(const unsigned int& pointCount) const
 {
 	assert(pointCount % 2 == 0 && "Requires even number of points");
-	
-	const double arcLength(ComputeParabolaArcLength(0.5 * parabolaInfo.diameter));// [in]
+
 	const unsigned int halfPointCount(static_cast<unsigned int>(0.5 * pointCount));
 	const double xStep(0.5 * parabolaInfo.diameter / (halfPointCount - 1));
 	
