@@ -110,7 +110,7 @@ void MainFrame::CreateControls()
 	leftSizer->Add(CreateVersionText(panel), wxSizerFlags().Border(wxALL, 5));
 
 	wxSizer *plotSizer(new wxBoxSizer(wxVERTICAL));
-	topSizer->Add(plotSizer);
+	topSizer->Add(plotSizer, wxSizerFlags().Expand().Proportion(1));
 	
 	mShapePlotArea = CreatePlotArea(this, mShapePlotInterface);
 	mResponsePlotArea = CreatePlotArea(this, mResponsePlotInterface);
@@ -174,19 +174,19 @@ wxSizer* MainFrame::CreateTextInputs(wxWindow* parent)
 	wxSizer* subSizer(new wxFlexGridSizer(3, 5, 5));
 	sizer->Add(subSizer, wxSizerFlags().Border(wxALL, 5));
 	
-	diameterText = new wxTextCtrl(sizer->GetStaticBox(), wxID_ANY);
+	diameterText = new wxTextCtrl(sizer->GetStaticBox(), idParabolaInputs);
 	subSizer->Add(new wxStaticText(sizer->GetStaticBox(), wxID_ANY, _T("Diameter")));
 	subSizer->Add(diameterText);
 	subSizer->Add(new wxStaticText(sizer->GetStaticBox(), wxID_ANY, _T("(in)")));
 	diameterText->SetValidator(wxFloatingPointValidator<double>(3, &parabolaInfo.diameter, wxNUM_VAL_NO_TRAILING_ZEROES));
 
-	focusPositionText = new wxTextCtrl(sizer->GetStaticBox(), wxID_ANY);
+	focusPositionText = new wxTextCtrl(sizer->GetStaticBox(), idParabolaInputs);
 	subSizer->Add(new wxStaticText(sizer->GetStaticBox(), wxID_ANY, _T("Focus Position")));
 	subSizer->Add(focusPositionText);
 	subSizer->Add(new wxStaticText(sizer->GetStaticBox(), wxID_ANY, _T("(in)")));
 	focusPositionText->SetValidator(wxFloatingPointValidator<double>(3, &parabolaInfo.focusPosition, wxNUM_VAL_NO_TRAILING_ZEROES));
 
-	numberOfFacetsText = new wxTextCtrl(sizer->GetStaticBox(), wxID_ANY);
+	numberOfFacetsText = new wxTextCtrl(sizer->GetStaticBox(), idParabolaInputs);
 	subSizer->Add(new wxStaticText(sizer->GetStaticBox(), wxID_ANY, _T("Number of Facets")));
 	subSizer->Add(numberOfFacetsText);
 	subSizer->Add(new wxStaticText(sizer->GetStaticBox(), wxID_ANY, _T("(-)")));
@@ -331,7 +331,7 @@ void MainFrame::SetProperties()
 //
 //==========================================================================
 BEGIN_EVENT_TABLE(MainFrame, wxFrame)
-	EVT_TEXT(wxID_ANY,				MainFrame::TextChangedEvent)
+	EVT_TEXT(idParabolaInputs,		MainFrame::TextChangedEvent)
 	EVT_BUTTON(idWriteShape,		MainFrame::OnWriteShapeClicked)
 END_EVENT_TABLE();
 
@@ -377,10 +377,13 @@ void MainFrame::OnWriteShapeClicked(wxCommandEvent& WXUNUSED(event))
 {
 	calculator.SetParabolaInfo(parabolaInfo);
 	
-	// TODO:  Get file name from user
-	std::string fileName;
+	wxFileDialog dialog(this, _T("Save As"), wxEmptyString, wxEmptyString, _T("LaTeX Source (*.tex)|*.tex"), wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+	if (dialog.ShowModal() == wxID_CANCEL)
+		return;
+		
+	std::string fileName(dialog.GetPath().ToStdString());
 	
-	const unsigned int pointCount(1000);
+	const unsigned int pointCount(2000);
 	LaTeXGenerator generator;
 	generator.SetPageSize(paperWidth, paperHeight);
 	if (!generator.WriteFlatPatterns(calculator.GetFacetShape(pointCount), fileName))
@@ -398,7 +401,7 @@ void MainFrame::UpdateCalculations()
 	depthText->SetLabel(wxString::Format(_T("%0.2f in"), calculator.GetParabolaDepth()));
 	maxDesignErrorText->SetLabel(wxString::Format(_T("%0.2f in"), calculator.GetMaxDesignError()));
 
-	const unsigned int pointCount(100);
+	const unsigned int pointCount(500);
 	const double maxFrequency(20000.0);
 	auto parabolaShape(calculator.GetParabolaShape(pointCount));
 	const auto facetShape(calculator.GetFacetShape(pointCount));
@@ -407,7 +410,7 @@ void MainFrame::UpdateCalculations()
 	mShapePlotInterface.ClearAllCurves();
 	mResponsePlotInterface.ClearAllCurves();
 
-	mShapePlotInterface.ForceEqualAxisScaling();
+	//mShapePlotInterface.ForceEqualAxisScaling();
 	mShapePlotInterface.SetXDataLabel(_T("(in)"));
 	mShapePlotArea->SetLeftYLabel(_T("(in)"));
 	
@@ -434,14 +437,17 @@ void MainFrame::UpdateCalculations()
 	for (auto& p : parabolaShape)
 		p(1) += offset;
 
+const auto start(std::chrono::steady_clock::now());
 	mShapePlotInterface.AddCurve(std::move(ConvertToDataset(parabolaShape)), _T("Parabola Shape"));
 	mShapePlotInterface.AddCurve(std::move(ConvertToDataset(facetShape)), _T("Facet Shape"));
 	mResponsePlotInterface.AddCurve(std::move(ConvertToDataset(frequencyResponse)), _T("Frequency Response"));
+	const auto end(std::chrono::steady_clock::now());
+	const auto et(end - start);
+	std::cerr << "ET outer = " << std::chrono::duration_cast<std::chrono::milliseconds>(et).count() << " ms\n\n";
 }
 
 std::unique_ptr<LibPlot2D::Dataset2D> MainFrame::ConvertToDataset(const ParabolaCalculator::Vector2DVectors& v)
 {
-	std::cerr << "v.size() = " << v.size() << '\n';
 	const auto start(std::chrono::steady_clock::now());
 	auto d(std::make_unique<LibPlot2D::Dataset2D>(v.size()));
 	for (unsigned int i = 0; i < v.size(); ++i)
@@ -451,7 +457,7 @@ std::unique_ptr<LibPlot2D::Dataset2D> MainFrame::ConvertToDataset(const Parabola
 	}
 	const auto end(std::chrono::steady_clock::now());
 	const auto et(end - start);
-	std::cerr << "ET = " << et.count() << "\n\n";
+	std::cerr << "ET inner = " << std::chrono::duration_cast<std::chrono::milliseconds>(et).count() << " ms\n\n";
 	
 	return d;
 }

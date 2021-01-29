@@ -47,6 +47,8 @@ private:
 	static const double speedOfSound;// [in/sec]
 	
 	ParabolaInfo parabolaInfo;
+	
+	double ComputeParabolaArcLength(const double& radius) const;
 };
 
 #endif// PARABOLA_CALCULATOR_H_

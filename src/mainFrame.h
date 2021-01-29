@@ -79,7 +79,8 @@ private:
 	// The event IDs
 	enum MainFrameEventID
 	{
-		idWriteShape = wxID_HIGHEST + 500
+		idWriteShape = wxID_HIGHEST + 500,
+		idParabolaInputs
 	};
 
 	void TextChangedEvent(wxCommandEvent& event);

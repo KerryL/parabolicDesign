@@ -15,6 +15,9 @@
 // Local headers
 #include "parabolaCalculator.h"
 
+// Standard C++ headers
+#include <cassert>
+
 const double ParabolaCalculator::speedOfSound(13503.937008);// [in/sec]
 
 double ParabolaCalculator::GetMinAmplifiedFrequency() const
@@ -61,12 +64,32 @@ ParabolaCalculator::Vector2DVectors ParabolaCalculator::GetParabolaShape(const u
 
 ParabolaCalculator::Vector2DVectors ParabolaCalculator::GetFacetShape(const unsigned int& pointCount) const
 {
+	assert(pointCount % 2 == 0 && "Requires even number of points");
+	
+	const double arcLength(ComputeParabolaArcLength(0.5 * parabolaInfo.diameter));// [in]
+	const unsigned int halfPointCount(static_cast<unsigned int>(0.5 * pointCount));
+	const double xStep(0.5 * parabolaInfo.diameter / (halfPointCount - 1));
+	
 	Vector2DVectors shape(pointCount);
-	for (unsigned int i = 0; i < pointCount; ++i)
+	for (unsigned int i = 0; i < halfPointCount; ++i)
 	{
-		shape[i](0) = 0.0;
-		shape[i](1) = 0.0;
+		const double radius(i * xStep);
+		shape[i](0) = ComputeParabolaArcLength(radius);
+		shape[i](1) = M_PI * radius / parabolaInfo.facetCount;// Divide circumference at this radius by the number of facets, then take half of that value
+		
+		// Symmetric about the x-axis
+		shape[pointCount - 1 - i](0) = shape[i](0);
+		shape[pointCount - 1 - i](1) = -shape[i](1);
 	}
-	// TODO
+
 	return shape;
+}
+
+double ParabolaCalculator::ComputeParabolaArcLength(const double& radius) const
+{
+	// Computed by:
+	// integral of sqrt(1 + d/dx(parabola equation)) dx from 0 to radius
+	const double w(0.5 * radius / parabolaInfo.focusPosition);
+	const double s(sqrt(1 + w * w));
+	return parabolaInfo.focusPosition * (w * s + log(w + s));
 }
