@@ -70,7 +70,6 @@ private:
 	wxTextCtrl* paperWidthText;
 
 	wxStaticText* depthText;
-	wxStaticText* minAmplifiedFrequencyText;
 	wxStaticText* maxDesignErrorText;
 
 	LibPlot2D::PlotRenderer *mShapePlotArea;

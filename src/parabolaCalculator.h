@@ -32,8 +32,7 @@ public:
 	};
 	
 	void SetParabolaInfo(const ParabolaInfo& info) { parabolaInfo = info; }
-	
-	double GetMinAmplifiedFrequency() const;
+
 	double GetParabolaDepth() const;
 	double GetMaxDesignError() const;
 	

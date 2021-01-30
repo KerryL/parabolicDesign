@@ -234,10 +234,6 @@ wxSizer* MainFrame::CreateTextOutputs(wxWindow* parent)
 	subSizer->Add(new wxStaticText(sizer->GetStaticBox(), wxID_ANY, _T("Parabola Depth")));
 	subSizer->Add(depthText);
 
-	minAmplifiedFrequencyText = new wxStaticText(sizer->GetStaticBox(), wxID_ANY, dummyQuantity);
-	subSizer->Add(new wxStaticText(sizer->GetStaticBox(), wxID_ANY, _T("Min. Amplified Frequency")));
-	subSizer->Add(minAmplifiedFrequencyText);
-
 	maxDesignErrorText = new wxStaticText(sizer->GetStaticBox(), wxID_ANY, dummyQuantity);
 	subSizer->Add(new wxStaticText(sizer->GetStaticBox(), wxID_ANY, _T("Max. Design Error")));
 	subSizer->Add(maxDesignErrorText);
@@ -406,8 +402,7 @@ void MainFrame::UpdateCalculations()
 		return;
 
 	calculator.SetParabolaInfo(parabolaInfo);
-	
-	minAmplifiedFrequencyText->SetLabel(wxString::Format(_T("%0.2f Hz"), calculator.GetMinAmplifiedFrequency()));
+
 	depthText->SetLabel(wxString::Format(_T("%0.2f in"), calculator.GetParabolaDepth()));
 	maxDesignErrorText->SetLabel(wxString::Format(_T("%0.2f in"), calculator.GetMaxDesignError()));
 

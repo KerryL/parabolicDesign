@@ -20,12 +20,15 @@
 
 const double ParabolaCalculator::speedOfSound(13503.937008);// [in/sec]
 
-double ParabolaCalculator::GetMinAmplifiedFrequency() const
+// Removed after updating gain plot, which shows there may be some minimial amplification at low
+// frequencies.  Better not to state this explicitly and allow the user to see the effect on the
+// gain plot.
+/*double ParabolaCalculator::GetMinAmplifiedFrequency() const
 {
 	// Rayleigh criterion?  It's unclear how it would apply to sound waves, but I see it mentioned in various internet articles.
 	// For now, it's the simple "how large a wave can fit in the diameter?" calculation.
 	return speedOfSound / parabolaInfo.diameter;// [Hz]
-}
+}*/
 
 double ParabolaCalculator::GetParabolaDepth() const
 {
@@ -62,21 +65,17 @@ ParabolaCalculator::Vector2DVectors ParabolaCalculator::GetResponse(const unsign
 	// https://www.electronics-notes.com/articles/antennas-propagation/parabolic-reflector-antenna/antenna-gain-directivity.php
 	
 	Vector2DVectors response(pointCount);
-	const double minFrequency(GetMinAmplifiedFrequency());
+	const double minFrequency(100.0);// [Hz] something small enough to show the low-frequency response without making the x-axis scaling unnecessarily tight
 	const double frequencyStep((maxFrequency - minFrequency) / (pointCount - 1));
 	const double depthToFocusRatio(GetParabolaDepth() / parabolaInfo.focusPosition);// [-]
 	for (unsigned int i = 0; i < pointCount; ++i)
 	{
 		response[i](0) = minFrequency + i * frequencyStep;
 		const double wavelength(speedOfSound / response[i](0));// [in]
-		/*const double efficiency(0.7);// TODO:  Calculate this based on the error in the design?
-		//response[i](1) = 20.0 * log10(3.25 * efficiency * parabolaInfo.diameter / speedOfSound * (response[i](0) * 2.0 * M_PI));// Wildtronics approach
-		const double a(M_PI * parabolaInfo.diameter / wavelength);
-		response[i](1) = 10.0 * log10(efficiency * a * a);// electronics-notes approach*/
 		const double focusToWavelengthRatio(parabolaInfo.focusPosition / wavelength);// [-]
 		const double b(log(1.0 + depthToFocusRatio));// [-] helper variable to clean up the below expression
 		const double pressureFactor(sqrt(1.0 + pow(4.0 * M_PI * focusToWavelengthRatio * b, 2) + 8.0 * M_PI * focusToWavelengthRatio * b * sin(4.0 * M_PI * focusToWavelengthRatio)));// [-]
-		response[i](1) = 20.0 * log10(pressureFactor);// Wahlström approach
+		response[i](1) = 20.0 * log10(pressureFactor);
 	}
 
 	return response;
