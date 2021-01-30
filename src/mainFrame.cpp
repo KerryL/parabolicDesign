@@ -398,6 +398,12 @@ void MainFrame::UpdateCalculations()
 {
 	if (!initialized)
 		return;
+		
+	// Validate inputs
+	if (parabolaInfo.diameter <= 0.0 ||
+		parabolaInfo.facetCount < 3 ||
+		parabolaInfo.focusPosition <= 0.0)
+		return;
 
 	calculator.SetParabolaInfo(parabolaInfo);
 	
@@ -441,27 +447,19 @@ void MainFrame::UpdateCalculations()
 	for (auto& p : parabolaShape)
 		p(1) += offset;
 
-const auto start(std::chrono::steady_clock::now());// TODO: Remove
 	mShapePlotInterface.AddCurve(std::move(ConvertToDataset(parabolaShape)), _T("Parabola Shape"));
 	mShapePlotInterface.AddCurve(std::move(ConvertToDataset(facetShape)), _T("Facet Shape"));
 	mResponsePlotInterface.AddCurve(std::move(ConvertToDataset(frequencyResponse)), _T("Frequency Response"));
-	const auto end(std::chrono::steady_clock::now());
-	const auto et(end - start);
-	std::cerr << "ET outer = " << std::chrono::duration_cast<std::chrono::milliseconds>(et).count() << " ms\n\n";
 }
 
 std::unique_ptr<LibPlot2D::Dataset2D> MainFrame::ConvertToDataset(const ParabolaCalculator::Vector2DVectors& v)
 {
-	const auto start(std::chrono::steady_clock::now());// TODO: Remove
 	auto d(std::make_unique<LibPlot2D::Dataset2D>(v.size()));
 	for (unsigned int i = 0; i < v.size(); ++i)
 	{
 		d->GetX()[i] = v[i](0);
 		d->GetY()[i] = v[i](1);
 	}
-	const auto end(std::chrono::steady_clock::now());
-	const auto et(end - start);
-	std::cerr << "ET inner = " << std::chrono::duration_cast<std::chrono::milliseconds>(et).count() << " ms\n\n";
 	
 	return d;
 }

@@ -22,6 +22,8 @@ const double ParabolaCalculator::speedOfSound(13503.937008);// [in/sec]
 
 double ParabolaCalculator::GetMinAmplifiedFrequency() const
 {
+	// Rayleigh criterion?  It's unclear how it would apply to sound waves, but I see it mentioned in various internet articles.
+	// For now, it's the simple "how large a wave can fit in the diameter?" calculation.
 	return speedOfSound / parabolaInfo.diameter;// [Hz]
 }
 
@@ -44,16 +46,37 @@ double ParabolaCalculator::GetMaxDesignError() const
 	
 ParabolaCalculator::Vector2DVectors ParabolaCalculator::GetResponse(const unsigned int& pointCount, const double& maxFrequency) const
 {
-	// Response equation from https://www.wildtronics.com/parabolicaccuracy.html#.YBQSbPtKg5k
-	// I need to find some more sources to derive/verify this equation.  The link seems to have
-	// an efficiency that varies with frequency and error, but they don't give this relationship.
+	// Current implementation of the response calculation is based on the equations given here:
+	// http://www.dzwiekinatury.pl/upload/files/strony/4/the_parabolic_reflector_sten_wahlstr%C3%B6m.pdf
+	// This paper has by far the most robust explanation of the calculations for any source I have found so far.
+	// The gain calculated here is for on-axis sounds.
+	// In this paper:
+	// - a          = focus position (measured from parabola apex; consistent with our convention)
+	// - lambda     = wavelength
+	// - l          = parabola depth
+	// - l / a      = depth-to-focus ratio
+	// - a / lambda = focus-to-wavelength ratio
+	
+	// Other sources that were tried and rejcted:
+	// https://www.wildtronics.com/parabolicaccuracy.html#.YBQSbPtKg5k
+	// https://www.electronics-notes.com/articles/antennas-propagation/parabolic-reflector-antenna/antenna-gain-directivity.php
+	
 	Vector2DVectors response(pointCount);
 	const double minFrequency(GetMinAmplifiedFrequency());
 	const double frequencyStep((maxFrequency - minFrequency) / (pointCount - 1));
+	const double depthToFocusRatio(GetParabolaDepth() / parabolaInfo.focusPosition);// [-]
 	for (unsigned int i = 0; i < pointCount; ++i)
 	{
 		response[i](0) = minFrequency + i * frequencyStep;
-		response[i](1) = 20.0 * log10(3.25 * parabolaInfo.diameter / speedOfSound * (response[i](0) * 2.0 * M_PI));
+		const double wavelength(speedOfSound / response[i](0));// [in]
+		/*const double efficiency(0.7);// TODO:  Calculate this based on the error in the design?
+		//response[i](1) = 20.0 * log10(3.25 * efficiency * parabolaInfo.diameter / speedOfSound * (response[i](0) * 2.0 * M_PI));// Wildtronics approach
+		const double a(M_PI * parabolaInfo.diameter / wavelength);
+		response[i](1) = 10.0 * log10(efficiency * a * a);// electronics-notes approach*/
+		const double focusToWavelengthRatio(parabolaInfo.focusPosition / wavelength);// [-]
+		const double b(log(1.0 + depthToFocusRatio));// [-] helper variable to clean up the below expression
+		const double pressureFactor(sqrt(1.0 + pow(4.0 * M_PI * focusToWavelengthRatio * b, 2) + 8.0 * M_PI * focusToWavelengthRatio * b * sin(4.0 * M_PI * focusToWavelengthRatio)));// [-]
+		response[i](1) = 20.0 * log10(pressureFactor);// Wahlström approach
 	}
 
 	return response;
